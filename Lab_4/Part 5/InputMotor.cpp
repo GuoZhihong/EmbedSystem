@@ -2,6 +2,10 @@
 #define F_CPU 10000000  // system clock is 20 MHz
 #include <util/delay.h>  // uses F_CPU to achieve us and ms delays
  
+#include <string.h>
+#define USART_BAUDRATE 4800
+#define BAUD_PRESCALE (((F_CPU/(USART_BAUDRATE*16UL)))-1)
+
 //Functions that control the car. 
 //Fnt = front wheels, Bak = back wheels
 //fwd = forward, rev = reverse
@@ -121,19 +125,46 @@ void delay_ms(unsigned int time_ms)
         _delay_ms(1);       
 }
  
-int main()
+int main(void)
 {
     motors_init();
-	
-	//fwdFnt();
-	//fwdFnt(100); //the smaller the nb the faster the speed. 200 seems to be too weak
-	fwdFnt(100);
-	revBak(100);
-   
-    while (1)
+
+	int speed = 100;//Note: the smaller the number, the faster the wheel will spin.
+  
+	UCSR0B |= (1<<RXEN0)  | (1<<TXEN0); //Initialization for serial communication
+	UCSR0C |= (1<<UCSZ00) | (1<<UCSZ01);
+	UBRR0H  = (BAUD_PRESCALE >> 8);
+	UBRR0L  = BAUD_PRESCALE;
+  
+    for(;;)
 	{
-		
-	}
+		// wait until a byte is ready to read
+		while( ( UCSR0A & ( 1 << RXC0 ) ) == 0 ){}
+  
+		// grab the byte from the serial port
+		received_byte = UDR0;
+   
+		// wait until the port is ready to be written to
+		while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){}
+ 
+		if(received_byte == 'f') //If what was typed was 0
+		{
+
+				fwdAll(speed);
+
+		}
+		else if(received_byte == 'b') //If what was typed was 1
+		{
+
+				revBak(speed);
+		}
+		else {
+				speed = received_byte;
+		}
+
+
+    }
         
     return 0;
 }
+
