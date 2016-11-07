@@ -8,7 +8,7 @@
 void M1_forward(unsigned char pwm)
 {
   OCR0A = 0;
-  OCR2A = pwm;
+  OCR0B = pwm;
 }
  
 void M1_reverse(unsigned char pwm)
@@ -28,7 +28,56 @@ void M2_reverse(unsigned char pwm)
   OCR2B = 0;
   OCR2A = pwm;
 }
- 
+
+void fwdFnt()
+{
+	PORTB |= 0b00100000;
+	PORTD |= 0b10000000;
+}
+
+void revFnt()
+{
+	PORTB |= 0b00010001;
+	PORTD |= 0b00000000;
+}
+
+ void revBak()
+{
+	PORTB |= 0b00000100;
+	PORTD |= 0b00000100;
+}
+
+void fwdBak()
+{
+	PORTB |= 0b00000010;
+	PORTD |= 0b00010000;
+} 
+
+void revAll(unsigned char pwm)
+{
+	OCR0A = OCR0B = OCR2A = OCR2B = pwm;
+	revFnt();
+	revBak();
+}
+
+void fwdAll(unsigned char pwm)
+{
+	OCR0A = OCR0B = OCR2A = OCR2B = pwm;
+	fwdFnt();
+	fwdBak();
+}
+
+void revAll()
+{
+	revFnt();
+	revBak();
+}
+
+void fwdAll()
+{
+	fwdFnt();
+	fwdBak();
+}
  
 // Motor Initialization routine -- this function must be called
 //  before you use any of the above functions
@@ -40,18 +89,15 @@ void motors_init()
     TCCR0A = TCCR2A = 0xF3;
  
     // use the system clock/8 (=2.5 MHz) as the timer clock
-    TCCR0B = TCCR2B = 0x01; //start the clock
+    TCCR0B = TCCR2B = 0x05; //start the clock
  
     // initialize all PWMs to 0% duty cycle (braking)
     OCR0A = OCR0B = OCR2A = OCR2B = 0;
  
     // set PWM pins as digital outputs (the PWM signals will not
     // appear on the lines if they are digital inputs)
-   // DDRD |= (1 << PD3) | (1 << PD5) | (1 << PD6) | (1 << PD7);
-    //DDRB |= (1 << PB3) | (1<< PB0);
-	DDRB |= (1<< PB0); //| (1 << PB3) | (1 << PB4);
-	DDRD |= (1 << PD7) | (1 << PD4) | (1 << PD2) | (1 << PD3) | (1 << PD6) | (1 << PD0);
-	DDRB |= (1 << PB3) | (1 << PB4) | (1 << PB5);
+	DDRD |= (1 << PD7) | (1 << PD4) | (1 << PD2) | (1 << PD3) | (1 << PD6) | (1 << PD0) | (1 << PD5);
+	DDRB |= (1<< PB0) |(1 << PB1) | (1 << PB2) | (1 << PB3) | (1 << PB4) | (1 << PB5);
 }
 
  
@@ -75,16 +121,15 @@ int main()
 {
     motors_init();
 	
-	PORTB |= 0b00110001;
-	PORTD |= 0b01000000;
-	//PORTD = 0b00000000; //PD7 should be on off
-	//PORTD=(PORTD & 0b11111100) | 0b10 ;
-    M1_forward(255);  // motor 1 forward at half speed
+	//fwdFnt();
+	fwdAll(100); //the smaller the nb the faster the speed.
+	
+    //M1_forward(255);  // motor 1 forward at half speed
    // M2_reverse(25);  // motor 2 reverse at 10% speed
  
-    delay_ms(5000);  // delay for 2s while motors run
+    //delay_ms(5000);  // delay for 2s while motors run
  
-    //M1_reverse(64);  // motor 1 reverse at 25% speed
+    //M1_reverse(255);  // motor 1 reverse at 25% speed
     //M2_forward(0);  // motor 2 stop/brake
  
     // loop here forever to keep the program counter from
