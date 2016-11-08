@@ -1,10 +1,20 @@
-#include <avr/io.h>
-#define F_CPU 1000000UL    // system clock is 20 MHz
+#include<avr/io.h>
+#define F_CPU 1000000UL   // system clock is 20 MHz
 #include <util/delay.h>  // uses F_CPU to achieve us and ms delays
+#include <string.h>
+#define USART_BAUDRATE 4800 //Needed for communication
+#define BAUD_PRESCALE (((F_CPU/(USART_BAUDRATE*16UL)))-1)
  
 //Functions that control the car. 
 //Fnt = front wheels, Bak = back wheels
 //fwd = forward, rev = reverse
+
+void stop()
+{
+	PORTB |= 0b00000000;
+	PORTD |= 0b00000000;
+}
+
 void fwdFnt()
 {
 	PORTB |= 0b00100000;
@@ -99,7 +109,7 @@ void motors_init()
     OCR0A = OCR0B = OCR2A = OCR2B = 0;
  
 	// set pins as output
-	DDRD |= (1 << PD7) | (1 << PD4) | (1 << PD2) | (1 << PD3) | (1 << PD6) | (1 << PD0) | (1 << PD5);
+	DDRD |= (1 << PD7) | (1 << PD4) | (1 << PD2) | (1 << PD3) | (1 << PD6) | (1 << PD5);
 	DDRB |= (1<< PB0) |(1 << PB1) | (1 << PB2) | (1 << PB3) | (1 << PB4) | (1 << PB5);
 }
 
@@ -120,20 +130,78 @@ void delay_ms(unsigned int time_ms)
     for (i = 0; i < time_ms; i++)
         _delay_ms(1);       
 }
- 
-int main()
+
+
+int main(void)
 {
-    motors_init();
+	char received_byte; //The byte that is read and sent
+	char message1[60] = "Hello! Please enter f or b for forwards or backwards.";
+	char message2[60] = "Please enter a number from 0 to 5 for the speed.";
+	
+	UCSR0B |= (1<<RXEN0)  | (1<<TXEN0); //Initialization for serial communication
+	UCSR0C |= (1<<UCSZ00) | (1<<UCSZ01);
+	UBRR0H  = (BAUD_PRESCALE >> 8);
+	UBRR0L  = BAUD_PRESCALE;
+	
+	//motors_init();
 	
 	//fwdFnt();
 	//fwdFnt(100); //the smaller the nb the faster the speed. 200 seems to be too weak
-	fwdFnt(100);
-	revBak(100);
-   
-    for(;;)
+	//fwdFnt(100);
+	//revBak(100);
+	for(int i=0; i<strlen(message1); i++)
 	{
+		UDR0 = message1[i];
+		_delay_ms(10);
+	}
+	UDR0 = 0x0A;
+	UDR0 = 0x0D;
+   
+	for(;;)
+	{
+		// wait until a byte is ready to read
+		while( ( UCSR0A & ( 1 << RXC0 ) ) == 0 ){}
+  
+		// grab the byte from the serial port
+		received_byte = UDR0;
+   
+		// wait until the port is ready to be written to
+		while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){}
+ 
+		if(received_byte == '0') //If what was typed was 0
+		{
+			stop();
+		}
+		else if(received_byte == '1') //If what was typed was 1
+		{
+			for(int i=0; i<strlen(message1); i++)
+			{
+				UDR0 = message1[i];
+				_delay_ms(10);
+			}
+			UDR0 = 0x0A;
+			UDR0 = 0x0D;
+		
+		}
+		else //for anything else that is typed
+		{
+			for(int i=0; i<strlen(message1); i++)
+			{
+				UDR0 = message1[i];
+				_delay_ms(10);
+			}
+			UDR0 = 0x0A;
+			UDR0 = 0x0D;
+		
+		}
+
     }
+   
+   
+    while (1)
+	{
+		
+	}
         
     return 0;
 }
-
