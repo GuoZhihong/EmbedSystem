@@ -1,5 +1,5 @@
 #include <avr/io.h>
-#define F_CPU 10000000  // system clock is 20 MHz
+#define F_CPU 1000000UL   
 #include <util/delay.h>  // uses F_CPU to achieve us and ms delays
  
 #include <string.h>
@@ -9,6 +9,12 @@
 //Functions that control the car. 
 //Fnt = front wheels, Bak = back wheels
 //fwd = forward, rev = reverse
+void stop()
+{
+	PORTB |= 0b00000000;
+	PORTD |= 0b00000000;
+}
+
 void fwdFnt()
 {
 	PORTB |= 0b00100000;
@@ -17,7 +23,7 @@ void fwdFnt()
 
 void fwdFnt(unsigned char pwm)
 {
-	OCR0A = OCR0B = pwm;
+	OCR0A = OCR0B = pwm; //set the speed of the car, smaller the faster
 	PORTB |= 0b00100000;
 	PORTD |= 0b10000000;
 }
@@ -147,19 +153,20 @@ int main(void)
 		// wait until the port is ready to be written to
 		while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){}
  
-		if(received_byte == 'f') //If what was typed was 0
+		if(received_byte == 'f') //If what was typed was f
 		{
 
-				fwdAll(speed);
+				fwdAll(speed); //make the wheels move forwards
 
 		}
-		else if(received_byte == 'b') //If what was typed was 1
+		else if(received_byte == 'b') //If what was typed was b
 		{
 
-				revBak(speed);
+				revBak(speed);//make the wheels go backwards
 		}
-		else {
-				speed = received_byte;
+		else 
+		{
+				speed = received_byte; //we assume the user is smart and enters a number
 		}
 
 

@@ -13,7 +13,7 @@ void fwdFnt()
 
 void fwdFnt(unsigned char pwm)
 {
-	OCR0A = OCR0B = pwm;
+	OCR0A = OCR0B = pwm; //set the speed of the car, smaller the faster
 	PORTB |= 0b00100000;
 	PORTD |= 0b10000000;
 }
