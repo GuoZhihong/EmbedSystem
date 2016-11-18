@@ -19,8 +19,9 @@
 //Declaration of our functions
 void USART_init(void);
 unsigned char USART_receive(void);
-void USART_send( unsigned char data);
+void USART_send( int data);
 void USART_putstring(char* StringPtr);
+void USART_Flush(void);
 
 void USART_init(){
 
@@ -51,6 +52,7 @@ void delay_ms(unsigned int time_ms)
 int main(void){
 
 	usb_init();
+
 	CPU_PRESCALE(CPU_16MHz);
 	
 	char buffer [32];
@@ -73,20 +75,24 @@ int main(void){
 
 	while (1)
 	{
-		// wait until a byte is ready to read
-		while(( UCSR0A & ( 1 << RXC0 )) == 0 ){}
+		/* wait until a byte is ready to read
+		   Grab the byte from the serial port
+		   This will grab data to be used as frequency
+		*/
+		USART_send(freq_val); //Grab buffer
 
-		  // grab the byte from the serial port
-		buffer = UDR0;
+		OCR0A = freq_val; //set frequency to buffer
 
-//		while(( UCSR0A & ( 1 << RXC0 )) == 0 ){}
+		USART_Flush(); //Flush buffer
+
+		//USART_send(buffer); //Grab new buffer
 
 //		timer_val = UDR0;
 		
 		// wait until the port is ready to be written to
-		while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){}
+
 		
-		OCR0A = freq_val;
+		//OCR0A = freq_val;
 
 		PORTD |= (1 << PD7);
 		delay_ms(timer_val);
@@ -97,18 +103,32 @@ int main(void){
 	}
 }
 
-void USART_send( unsigned char data){
+/*
+*	Function waits for user input and output it as data
+*/
+void USART_send(int data){
  
- while(!(UCSR0A & (1<<UDRE0)));
- UDR0 = data;
+ while(!(UCSR0A & (1<<UDRE0))); // Wait for empty transmit buffer
+ UDR0 = data; //Puts data into buffer, sends the data
  
 }
 
+/*
+	Function  waits data input and output it to user
+*/
 unsigned char USART_receive(void){
  
- while(!(UCSR0A & (1<<RXC0)));
- return UDR0;
+ while(!(UCSR0A & (1<<RXC0))); //Wait for data to be received
+ return UDR0; //Get and return received data from buffer
  
+}
+
+/*
+	Flush the receiver buffer. This empties the buffer for new data.
+*/
+void USART_Flush(void){
+	unsigned char dummy;
+	while (UCSR0A & (1<< RXC0))  dummy = UDR0;
 }
 
 void USART_putstring(char* StringPtr){
