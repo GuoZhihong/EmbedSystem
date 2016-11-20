@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <avr/io.h>
 #include <util/delay.h>
-#include "usb_serial.h"
 #include <string.h>
 //#include <uart.h>
 
@@ -25,6 +24,9 @@ void USART_Flush(void);
 int setTimer(char timerChar);
 void configurePWD(void);
 void setFWD(char freq_ch);
+uint16_t ReadADC(uint8_t ADCchannel);
+void analog_init(void);
+void delay_ms(unsigned int time_ms);
 
 void USART_init(){
 
@@ -40,17 +42,15 @@ void USART_init(){
 
 }
 
-void delay_ms(unsigned int time_ms)
-{
-    // _delay_ms() comes from <util/delay.h> and can only
-    //  delay for a max of around 13 ms when the system
-    //  clock is 20 MHz, so we define our own longer delay
-    //  routine based on _delay_ms()
- 
-    unsigned int i;
- 
-    for (i = 0; i < time_ms; i++)
-        _delay_ms(1);       
+void analog_init(){
+    /*
+        Declare variables for Analog
+    */
+
+     // Select Vref=AVcc
+    ADMUX |= (1<<REFS0);
+    //set prescaller to 128 and enable ADC register
+    ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN); 
 }
 
 int main(void){
@@ -59,13 +59,11 @@ int main(void){
 
 	CPU_PRESCALE(CPU_16MHz);
 	
-	//char buffer [32];
+	char buffer [32];
 
-	DDRD |= (1<<PD6) | (1<<PD7); //Pin 7 is used to test Timer+Frequency, Pin6 is used to solely test Timer.
-
-	char freq_ch, timer_ch;
+	char timer_ch;
 	int timer_val;
-	int counter;
+	int analog_Val;
 	//
 	//Declare variables for Timer
 	//
@@ -74,23 +72,34 @@ int main(void){
 	
 	PORTD |= (1 << PD6); 
 
+	timer_ch = USART_receive(); // wait for input for Timer
 
-		 	freq_ch = USART_receive(); //Stops loop and wait for  input for frequency
-		 	USART_Flush();
-			 timer_ch = USART_receive(); //Stops loop and wait for input for Timer
-
-		 	setFWD(freq_ch); //Set new frequency value
-		 	timer_val = setTimer(timer_ch); //Set time value
+	timer_val = setTimer(timer_ch); //Set time value
 
 	while (1)
 	{
+            itoa(ReadADC(0),buffer,5); //Convert data from analog into char array.
+            USART_send(buffer); //Prints to console.
 
-			PORTD |= (1 << PD7); //Turn Pin 7 on
-			delay_ms(timer_val); //Wait for timer_val miliseconds
-			PORTD &= ~(1 << PD7); //Turn Pin 7 off
 			delay_ms(timer_val); //Wait for timer_val miliseconds
 
 	}
+}
+
+/*
+
+    Function reads analog from ADC0 and return Data.
+
+*/
+uint16_t ReadADC(uint8_t ADCchannel)
+{
+    //select ADC channel with safety mask
+    ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
+    //single conversion mode
+    ADCSRA |= (1<<ADSC);
+    // wait until ADC conversion is complete
+    while( ADCSRA & (1<<ADSC) );
+   return ADC;
 }
 
 /*
@@ -121,14 +130,6 @@ unsigned char USART_receive(void){
 void USART_Flush(void){
 	unsigned char dummy;
 	while (UCSR0A & (1<< RXC0))  dummy = UDR0;
-}
-
-void USART_putstring(char* StringPtr){
- 
-while(*StringPtr != 0x00){    //Here we check if there is still more chars to send, this is done checking the actual char and see if it is different from the null char
- USART_send(*StringPtr);    //Using the simple send function we send one char at a time
- StringPtr++;}        //We increment the pointer so we can read the next char
- 
 }
 
 /*
@@ -188,5 +189,19 @@ void setFWD(char freq_ch)
 				OCR0A = 200;
 				break;
 		}
+}
+
+
+void delay_ms(unsigned int time_ms)
+{
+    // _delay_ms() comes from <util/delay.h> and can only
+    //  delay for a max of around 13 ms when the system
+    //  clock is 20 MHz, so we define our own longer delay
+    //  routine based on _delay_ms()
+ 
+    unsigned int i;
+ 
+    for (i = 0; i < time_ms; i++)
+        _delay_ms(1);       
 }
 
