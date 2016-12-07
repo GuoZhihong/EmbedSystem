@@ -17,87 +17,81 @@
 //what should be compelted: I/O console input and reply. Speed of one wheel. 
 //TODO: debugging. update it to work on on more than one wheel. And go in reverse
 //if char does not work, and the input is uin8_t, then it means that the buffer must be created to an array of chars. 
+void initWheels(void);
+
+
 
 void initWheels()
 {
-	//DDRB |= (1 << PB1); //Enablers (aka Accelerator) 
-	DDRD |= (1 << PD2);
-	DDRB |= (1 << PD3); //A inputs (directions of wheels) [PD2: Back] [PD3: front]
+	DDRD |= (1 << PD6); //Enablers (aka Accelerator) 
+	DDRD |= (1 << PD7);
+	DDRB |= (1 << PB0); //A inputs (directions of wheels) [PD2: Back] [PD3: front]
 	
     TCCR0A |= (1 << COM0A1) | (1 << WGM01) | (1<< WGM00);
 	TCCR0B |= (1 << CS00);
-	OCR0A = OCR2A = 0;
+
+	//OCR0A = 0;
 
 	//PORTB |= (0 << PB5) | (1 << PB4);
 }
 
-void initUart()
-{
-	 UCSR0B |= (1<<RXEN0)  | (1<<TXEN0); 
- 	 UCSR0C |= (1<<UCSZ00) | (1<<UCSZ01);
-	 UBRR0H  = (BAUD_PRESCALE >> 8);
-	 UBRR0L  = BAUD_PRESCALE;
-}
+// void initUart()
+// {
+// 	 UCSR0B |= (1<<RXEN0)  | (1<<TXEN0); 
+//  	 UCSR0C |= (1<<UCSZ00) | (1<<UCSZ01);
+// 	 UBRR0H  = (BAUD_PRESCALE >> 8);
+// 	 UBRR0L  = BAUD_PRESCALE;
+// }
 
- char receiveByte()
- {
-	  char received_byte;
- 	  // wait until a byte is ready to read
-	  while( ( UCSR0A & ( 1 << RXC0 ) ) == 0 ){;}
+//  char receiveByte()
+//  {
+// 	  char received_byte;
+//  	  // wait until a byte is ready to read
+// 	  while( ( UCSR0A & ( 1 << RXC0 ) ) == 0 ){;}
 	  
-	  // grab the byte from the serial port
-	  received_byte = UDR0;
+// 	  // grab the byte from the serial port
+// 	  received_byte = UDR0;
 	 
-	  return received_byte;
- } 
+// 	  return received_byte;
+//  } 
 
-void sendByte(char sent_byte)
-{
-	  // wait until the port is ready to be written to
-	  while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){;}
+// void sendByte(char sent_byte)
+// {
+// 	  // wait until the port is ready to be written to
+// 	  while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 ){;}
 	 
-	  // write the byte to the serial port
-    	  UDR0 = sent_byte;
-}
+// 	  // write the byte to the serial port
+//     	  UDR0 = sent_byte;
+// }
 
 int main(void){
+	
 	initWheels();
-	//initUart();
-	//volatile char m8;
 
-	//OCR1A = 255;
-	//PORTB |= (1 << 1);
-	int acc = 255;
+	OCR0A = 120;
 
     	while(1)
    	    {
 			
 			//_delay_ms(5000);
 
-			goForward(acc);
-			_delay_ms(5000);
+			goForward();
+			_delay_ms(2000);
 		
-			//goBackward(acc);
-			//_delay_ms(5000);
-
-			acc = acc + 50;
-
-			if (acc = 1050){
-				acc = 0;
-			}
+			goBackward();
+			_delay_ms(2000);
     	}
     	return 0;   
 }
 
-goForward(int PWM)
+goForward()
 {
-     //PORTD |= (1 << 3) | ~(1 << 2); 
-	OCR0A = 0;
-	OCR2A = PWM;
+    PORTD |= 0b10000000;
+	PORTB |= 0b00000000; 
 }
 
-goBackward(int PWM)
+goBackward()
 {
-	OCR0A = PWM;
-	OCR2A = 0;
+    PORTD |= 0b00000000;
+	PORTB |= 0b00000001;
 }
