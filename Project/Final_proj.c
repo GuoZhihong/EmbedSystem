@@ -8,9 +8,6 @@
 //what should be compelted: I/O console input and reply. Speed of one wheel. 
 //TODO: debugging. update it to work on on more than one wheel. And go in reverse
 //if char does not work, and the input is uin8_t, then it means that the buffer must be created to an array of chars. 
-//void initWheels(void);
-
-
 
 void initWheels()
 {
@@ -34,7 +31,8 @@ int main(void){
 	
 	initWheels();
 	
-					OCR0A = 255;
+	OCR0A = 255;
+
     	while(1)
    	    {
 			
@@ -42,11 +40,8 @@ int main(void){
 			// goForward();
 			// _delay_ms(1500);
 
-			turnLeft();
-			_delay_ms(500);
-
-			turnRight();
-			_delay_ms(500);
+			turnLeft_90();
+			turnRight_90();
 
 			// goBackward();
 			// _delay_ms(1500);
@@ -134,4 +129,18 @@ turnRight()
 			//FRONT LEFT wheel
 			PORTB &= ~(1<< PB2);
 			PORTB |= (1 << PB1);
+}
+
+//Turn 90 degree RIGHT
+turnRight_90()
+{
+    turnRight();
+    _delay_ms(500);
+}
+
+//Turn 90 degree LEFT
+turnLeft_90()
+{
+    turnLeft();
+    _delay_ms(500);
 }
